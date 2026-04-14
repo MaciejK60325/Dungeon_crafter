@@ -1,7 +1,5 @@
 
 
-SET @seed = "fishtank"
-
 DELIMITER $$
 CREATE OR REPLACE FUNCTION Encode_password(pass VARCHAR(63)) RETURNS VARCHAR(63)
 BEGIN
@@ -35,21 +33,5 @@ BEGIN
         mail,
         @p0
 	);
-END $$
-
-
-DELIMITER $$
-CREATE OR REPLACE FUNCTION Check_login_and_pass(loginN VARCHAR(63), pass VARCHAR(63)) RETURNS VARCHAR(63)
-BEGIN
-    DECLARE user0 VARCHAR(63); 
-    SELECT `Decode_password`(users.pass) INTO user0 FROM users WHERE loginN = users.userName;
-
-    Set @isLogin := ISNULL(user0);
-    IF user0 = pass
-    THEN
-        return "haslo i login są poprawne";
-    ELSE
-	    return "haslo lub login są niepoprawne";
-    END IF;
 END $$
 DELIMITER ;

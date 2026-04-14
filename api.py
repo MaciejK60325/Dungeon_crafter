@@ -4,8 +4,8 @@ from sqlmodel import SQLModel, Field, Session, create_engine, select
 from typing import Optional, List
 
 # --- MODELE ---
-class User(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+class Users(SQLModel, table=True):
+    userID: Optional[int] = Field(default=None, primary_key=True)
     login: str
     password: str
     mail: str
@@ -44,12 +44,13 @@ def on_startup():
     create_db_and_tables()
 
 # --- ENDPOINTY ---
-@app.post("/users/", response_model=User)
-def create_user(user: UserCreate):
-    db_user = User.from_orm(user)
+@app.post("/users/", response_model=Users)
+def create_user(users: UserCreate):
+    users.password = Encode(users.password)
+    db_user = Users.from_orm(users)
     with Session(engine) as session:
         # Sprawdzenie czy login już istnieje
-        existing_user = session.exec(select(User).where(User.login == user.login)).first()
+        existing_user = session.exec(select(Users).where(Users.login == users.login)).first()
         if existing_user:
             raise HTTPException(status_code=400, detail="Login już istnieje")
         session.add(db_user)
@@ -57,16 +58,39 @@ def create_user(user: UserCreate):
         session.refresh(db_user)
         return db_user
 
-@app.get("/users/", response_model=List[User])
+@app.get("/users/", response_model=List[Users])
 def read_users():
     with Session(engine) as session:
-        users = session.exec(select(User)).all()
+        users = session.exec(select(Users)).all()
         return users
 
 @app.post("/login/")
 def login_user(login: str, password: str):
     with Session(engine) as session:
-        user = session.exec(select(User).where(User.login == login, User.password == password)).first()
+        user = session.exec(select(Users).where(Users.login == login, Users.password == Encode(password))).first()
         if not user:
             raise HTTPException(status_code=400, detail="Niepoprawny login lub hasło")
         return {"message": "Zalogowano", "user": user.login}
+    
+
+# salt added to password
+salt = "fishnet"
+
+# --- Encode password ---
+def Encode(password: str):
+    salted_pass = password + salt
+
+    #hashing later
+    encoded_pass = salted_pass
+
+    return encoded_pass
+
+# --- Decode password ---
+
+# def Decode(password: str):
+    
+#     #unhashing later
+#     decoded_pass = password
+#     unsalted_pass = decoded_pass.replace(salt, '')
+
+#     return unsalted_pass
