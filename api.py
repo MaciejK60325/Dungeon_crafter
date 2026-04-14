@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from typing import Optional, List
+from contextlib import asynccontextmanager
 
 # --- MODELE ---
 class User(SQLModel, table=True):
@@ -23,8 +24,15 @@ engine = create_engine(sqlite_url, echo=True)
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
+# --- STARTUP ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
+
 # --- FASTAPI + CORS ---
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://127.0.0.1:5500",  # Twój frontend
@@ -38,10 +46,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- STARTUP ---
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
 
 # --- ENDPOINTY ---
 @app.post("/users/", response_model=User)
