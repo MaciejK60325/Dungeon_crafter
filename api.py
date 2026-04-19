@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Field, Session, create_engine, select
 from typing import Optional, List
 from contextlib import asynccontextmanager
-import hashlib
-
 
 # --- MODELE ---
 class Users(SQLModel, table=True):
@@ -79,15 +77,15 @@ def login_user(login: str, password: str):
         return {"message": "Zalogowano", "user": user.login}
     
 
-# SALT added to password
-SALT = "fishnet"
+# salt added to password
+salt = "fishnet"
 
 # --- Encode password ---
 def Encode(password: str):
-    salted_pass = password + SALT
+    salted_pass = password + salt
 
-    #hashing
-    encoded_pass = hashlib.sha256(salted_pass.encode("utf-8")).hexdigest()
+    #hashing later
+    encoded_pass = salted_pass
 
     return encoded_pass
 
