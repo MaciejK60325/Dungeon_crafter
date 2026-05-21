@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import './App.css'
+import Dashboard from './Dashboard'
 
 function App() {
   const [isLogin, setIsLogin] = useState(true);
+  // NEW STATE: Global login status and logged user's data
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState('');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -12,7 +16,6 @@ function App() {
 
   const API_URL = "http://127.0.0.1:8000";
 
-  // Główna funkcja - wysłanie formularza
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLogin) {
@@ -22,6 +25,7 @@ function App() {
     }
   };
 
+  // User Authorization
   const handleLogin = async () => {
     try {
       const res = await fetch(`${API_URL}/login/?login=${username}&password=${password}`, {
@@ -30,22 +34,27 @@ function App() {
       const data = await res.json();
 
       if (res.ok) {
-        setMessage({ text: "Autoryzacja pomyślna!", type: "success" });
-        console.log("Dane z API:", data);
+        setMessage({ text: "Authorization successful!", type: "success" });
+        console.log("API response data:", data);
+        
+        // success
+        setUser(data.user);
+        setIsLoggedIn(true);
       } else {
-        // Jeśli API zwróci błąd (np. złe hasło)
-        setMessage({ text: data.detail || "Błąd logowania: Nieprawidłowe dane", type: "error" });
+        // If error
+        setMessage({ text: data.detail || "Login failed: Invalid credentials", type: "error" });
       }
     } catch (err) {
-      // Jeśli serwer w ogóle nie odpowiada
-      setMessage({ text: "Błąd połączenia: Serwer API jest niedostępny", type: "error" });
+      // If server unreachable
+      setMessage({ text: "Connection error: API server is offline", type: "error" });
       console.error("API Connection Error:", err);
     }
   };
 
+  // API User Registration
   const handleRegister = async () => {
     if (password !== confirmPassword) {
-      setMessage({ text: "Walidacja: Hasła nie są identyczne", type: "error" });
+      setMessage({ text: "Validation error: Passwords do not match", type: "error" });
       return;
     }
 
@@ -62,58 +71,69 @@ function App() {
       const data = await res.json();
 
       if (res.ok) {
-        setMessage({ text: "Rejestracja zakończona sukcesem", type: "success" });
+        setMessage({ text: "Registration completed successfully!", type: "success" });
         setIsLogin(true);
       } else {
-        setMessage({ text: data.detail || "Błąd API: Rejestracja nie powiodła się", type: "error" });
+        setMessage({ text: data.detail || "API error: Registration failed", type: "error" });
       }
     } catch (err) {
-      setMessage({ text: "Błąd krytyczny: Brak odpowiedzi z serwera API", type: "error" });
+      setMessage({ text: "Critical error: No response from API server", type: "error" });
     }
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUser('');
+    setMessage({ text: 'Logged out successfully', type: 'success' });
+  };
+
+  if (isLoggedIn) {
+    return <Dashboard username={user} onLogout={handleLogout} />;
+  }
+
+  // Render Login / Registration UI if not authenticated
   return (
     <div className="container">
       <div className="card">
         <h1>Dungeon Crafter</h1>
-        <h2>{isLogin ? 'Logowanie' : 'Rejestracja'}</h2>
+        <h2>{isLogin ? 'Login' : 'Registration'}</h2>
 
         <form onSubmit={handleSubmit}>
 
-          {/* NICK - rejestracja I logowanie */}
+          {/* USERNAME - registration and login */}
           <input
             type="text"
-            placeholder="Nazwa użytkownika / Nick"
+            placeholder="Username / Nickname"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
           />
 
-          {/* EMAIL - rejestracja */}
+          {/* EMAIL - registration only */}
           {!isLogin && (
             <input
               type="email"
-              placeholder="Twój email"
+              placeholder="Your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           )}
 
-          {/* HASŁO - zawsze */}
+          {/* PASSWORD - always required */}
           <input
             type="password"
-            placeholder="Hasło"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
-          {/* POWTÓRZ HASŁO - rejestracja */}
+          {/* CONFIRM PASSWORD - registration */}
           {!isLogin && (
             <input
               type="password"
-              placeholder="Powtórz hasło"
+              placeholder="Confirm password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
@@ -127,20 +147,20 @@ function App() {
           )}
 
           <button type="submit">
-            {isLogin ? 'Zaloguj' : 'Stwórz konto'}
+            {isLogin ? 'Sign In' : 'Create Account'}
           </button>
         </form>
 
         <p style={{ fontSize: '13px', marginTop: '15px' }}>
-          {isLogin ? 'Nie masz konta? ' : 'Masz już konto? '}
+          {isLogin ? "Don't have an account? " : 'Already have an account? '}
           <span
             onClick={() => {
               setIsLogin(!isLogin);
-              setMessage({ text: '', type: '' }); // czyszczenie błędów po przełaczeniu
+              setMessage({ text: '', type: '' }); // clear error logs on toggle
             }}
             style={{ color: '#bb86fc', cursor: 'pointer', textDecoration: 'underline' }}
           >
-            {isLogin ? 'Zarejestruj się' : 'Zaloguj się'}
+            {isLogin ? 'Register here' : 'Login here'}
           </span>
         </p>
       </div>
