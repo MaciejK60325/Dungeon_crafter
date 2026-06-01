@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 
-export default function Dashboard({ username, onLogout }) {
+export default function Dashboard({ userID, username, onLogout }) {
     const API_URL = "http://127.0.0.1:8000";
 
     // NAVIGATION & THEME STATES
@@ -9,10 +9,10 @@ export default function Dashboard({ username, onLogout }) {
     const [isDarkMode, setIsDarkMode] = useState(true);
 
     // ROOMS STATES
-    const [activeTab, setActiveTab] = useState('your-rooms');
+    const [activeTab, setActiveTab] = useState('GM');
     const [rooms, setRooms] = useState([
         // test room
-        { id: 101, name: "test", room_code: "X8R2PL", role: "GM", tags: ["GM", "D&D 5e"] }
+        //{ id: 101, name: "test", room_code: "X8R2PL", role: "GM", tags: ["GM", "D&D 5e"] }
     ]);
     const [selectedTags, setSelectedTags] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -30,8 +30,9 @@ export default function Dashboard({ username, onLogout }) {
     const [newRoomName, setNewRoomName] = useState('');
     const [newRoomRole, setNewRoomRole] = useState('GM');
     const [newRoomTags, setNewRoomTags] = useState([]);
+    const [isRefreshed, setIsRefreshed] = useState(false);
 
-    const availableTags = ["GM", "Player", "D&D 5e", "Campaign", "One-Shot", "High Fantasy", "Dark Fantasy", "Dungeon Crawl"];
+    const availableTags = ["D&D 5e", "Campaign", "One-Shot", "High Fantasy", "Dark Fantasy", "Dungeon Crawl"];
 
     useEffect(() => {
         if (!isDarkMode) {
@@ -48,7 +49,7 @@ export default function Dashboard({ username, onLogout }) {
         const fetchRooms = async () => {
             setLoading(true);
             try {
-                const endpoint = activeTab === 'your-rooms' ? '/rooms/mine' : '/rooms/friends';
+                const endpoint = activeTab === 'GM' ? '/rooms/mine' : '/rooms/friends';
                 const res = await fetch(`${API_URL}${endpoint}?username=${username}`);
                 if (res.ok) {
                     const data = await res.json();
@@ -109,9 +110,19 @@ export default function Dashboard({ username, onLogout }) {
         });
     };
 
-    const handleDeleteRoom = (roomId, e) => {
+    const handleDeleteRoom = async (roomId, e) => {
         e.preventDefault();
-        setRooms(prev => prev.filter(room => room.id !== roomId));
+
+        try{
+            const res = await fetch(`${API_URL}/rooms/?roomID=${roomId}`, {
+                method: 'DELETE'
+            });
+        }
+        catch(err){
+            console.error("API Connection Error:", err);
+        }
+        setIsRefreshed(false)
+        //setRooms(prev => prev.filter(room => room.id !== roomId));
     };
 
     const toggleCodeVisibility = (roomId) => {
@@ -122,28 +133,125 @@ export default function Dashboard({ username, onLogout }) {
         }
     };
 
-    const handleCreateRoomSubmit = (e) => {
+    const handleRefreshRooms = async () =>{     
+        setIsRefreshed(true)
+        try{
+            const res = await fetch(`${API_URL}/rooms/?userID=${userID}`, {
+                method: "GET"
+            });
+            const data = await res.json()
+
+            if(res.ok){
+                setRooms([])
+                for(const room in data)
+                {
+                    const t = data[room].tags.split(",")
+
+                    const newRoomPayload = {
+                        id: data[room].roomID,
+                        name: data[room].roomName,
+                        room_code: data[room].roomCode,
+                        role: 'GM',
+                        tags: t,
+                        image_url: ''
+                    };
+                    setRooms(prev => [...prev, newRoomPayload]);
+                }
+            }
+        }
+        catch(err)
+        {
+            console.error("API Connection Error:", err);
+        }
+
+        try{
+            const res = await fetch(`${API_URL}/friendRooms/?userID=${userID}`, {
+                method: "GET"
+            });
+            const data = await res.json()
+
+            if(res.ok)
+            {
+                for(const room in data)
+                {
+                    const t = data[room].tags.split(",")
+
+                    const newRoomPayload = {
+                        id: data[room].roomID,
+                        name: data[room].roomName,
+                        room_code: data[room].roomCode,
+                        role: 'Player',
+                        tags: t,
+                        image_url: ''
+                    };
+                    setRooms(prev => [...prev, newRoomPayload]);
+                } 
+            }
+        }
+        catch(err)
+        {
+            console.error("API Connection Error:", err);
+        }
+    }
+    const handleRefreshFriendRooms = async () =>{
+
+    }
+
+    const handleCreateRoomSubmit = async (e) => {
         e.preventDefault();
         if (!newRoomName.trim()) return;
 
         const generatedCode = generatePhasmoCode();
-        const newRoomPayload = {
-            id: Date.now(),
-            name: newRoomName,
-            room_code: generatedCode,
-            role: newRoomRole,
-            tags: [newRoomRole, ...newRoomTags],
-            image_url: ''
-        };
 
-        setRooms(prev => [...prev, newRoomPayload]);
+        try {
+            const res = await fetch(`${API_URL}/rooms/`,{
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userID: userID,
+                    roomName: newRoomName,
+                    tags: newRoomTags.toString(),
+                    roomCode: generatedCode
+                })  
+            })
+            const data = await res.json();
+
+            if (res.ok) {
+                
+            } else {
+                
+            }
+        }
+        catch(err)
+        {
+            console.error("API Connection Error:", err);
+        }
+
+        setIsRefreshed(false)
+        
+        // setRooms(prev => [...prev, newRoomPayload]);
         setNewRoomName('');
         setNewRoomRole('GM');
         setNewRoomTags([]);
         setIsModalOpen(false);
     };
 
+    const HandleJoinRoom = async () => {
+        try{
+            const res = await fetch(`${API_URL}/joinRoom/?roomCode=${joinCode}&userID=${userID}`,{
+                method: "POST",
+            });
+            const data = await res.json();
+        }
+        catch(err)
+        {
+            console.error("API Connection Error:", err);
+        }   
+    }
+
+
     const filteredRooms = rooms.filter(room => {
+        if(room.role != activeTab) return false
         if (selectedTags.length === 0) return true;
         return room.tags && selectedTags.every(tag => room.tags.includes(tag));
     });
@@ -168,6 +276,7 @@ export default function Dashboard({ username, onLogout }) {
             {/* 1. ROOM VIEWING INTERFACE */}
             {currentNav === 'rooms' && (
                 <div className="main-layout">
+                    {isRefreshed===false && handleRefreshRooms()}
                     <aside className="filters-sidebar">
                         <h3>filters:</h3>
                         <h4>tags:</h4>
@@ -184,8 +293,8 @@ export default function Dashboard({ username, onLogout }) {
 
                     <main className="rooms-content">
                         <div className="tabs-header">
-                            <span className={`tab ${activeTab === 'your-rooms' ? 'active' : ''}`} onClick={() => setActiveTab('your-rooms')}>[Your Rooms]</span>
-                            <span className={`tab ${activeTab === 'friends-rooms' ? 'active' : ''}`} onClick={() => setActiveTab('friends-rooms')}>[Friend's room]</span>
+                            <span className={`tab ${activeTab === 'GM' ? 'active' : ''}`} onClick={() => setActiveTab('GM')}>[Your Rooms]</span>
+                            <span className={`tab ${activeTab === 'Player' ? 'active' : ''}`} onClick={() => setActiveTab('Player')}>[Friend's room]</span>
                         </div>
 
                         {loading && <p style={{ textAlign: 'center', color: 'var(--color-accent)' }}>Loading scrolls...</p>}
@@ -195,7 +304,7 @@ export default function Dashboard({ username, onLogout }) {
                                 const hasCustomImage = localImages[room.id] || room.image_url;
                                 return (
                                     <div key={room.id} className="room-card" style={{ position: 'relative' }}>
-                                        {activeTab === 'your-rooms' && (
+                                        {activeTab === 'GM' && (
                                             <button className="delete-room-btn" onClick={(e) => handleDeleteRoom(room.id, e)} title="Delete this room"></button>
                                         )}
                                         <h3>[{room.name}]</h3>
@@ -235,19 +344,19 @@ export default function Dashboard({ username, onLogout }) {
                                 );
                             })}
 
-                            {activeTab === 'your-rooms' && (
+                            {activeTab === 'GM' && (
                                 <div className="room-card create-room-card" onClick={() => setIsModalOpen(true)}>
                                     <h3>[create a new room]</h3>
                                     <div className="plus-sign">+</div>
                                 </div>
                             )}
 
-                            {activeTab === 'friends-rooms' && (
+                            {activeTab === 'Player' && (
                                 <div className="room-card join-room-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                     <h3>[join a room]</h3>
                                     <div className="join-input-container" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px' }}>
                                         <input type="text" placeholder="Enter 6-digit code" value={joinCode} onChange={(e) => setJoinCode(e.target.value.toUpperCase())} maxLength={6} style={{ background: 'var(--bg-main)', border: '1px solid var(--color-border)', color: 'var(--color-accent)', padding: '10px', textAlign: 'center', fontSize: '16px', borderRadius: '4px', width: '100%', boxSizing: 'border-box', letterSpacing: '2px' }} />
-                                        <button onClick={() => console.log(`Joining code: ${joinCode}`)} className="apply-btn" style={{ margin: '5px 0 0 0' }}>Enter Room</button>
+                                        <button onClick={() => HandleJoinRoom()} className="apply-btn" style={{ margin: '5px 0 0 0' }}>Enter Room</button>
                                     </div>
                                 </div>
                             )}
@@ -548,13 +657,6 @@ export default function Dashboard({ username, onLogout }) {
                             <div className="form-group">
                                 <label>Dungeon / Room Name</label>
                                 <input type="text" placeholder="e.g. Underdark Lair" value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} required />
-                            </div>
-                            <div className="form-group">
-                                <label>Select Your Initial Role</label>
-                                <div className="role-selector">
-                                    <button type="button" className={`role-btn ${newRoomRole === 'GM' ? 'selected' : ''}`} onClick={() => setNewRoomRole('GM')}>Game Master</button>
-                                    <button type="button" className={`role-btn ${newRoomRole === 'Player' ? 'selected' : ''}`} onClick={() => setNewRoomRole('Player')}>Player</button>
-                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Select Tags / Attributes</label>

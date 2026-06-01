@@ -7,6 +7,7 @@ function App() {
   // NEW STATE: Global login status and logged user's data
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState('');
+  const [userID, setUserID] = useState('');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,6 +40,8 @@ function App() {
         
         // success
         setUser(data.user);
+        setUserID(data.userID)
+        console.log(data.userID)
         setIsLoggedIn(true);
       } else {
         // If error
@@ -88,7 +91,7 @@ function App() {
   };
 
   if (isLoggedIn) {
-    return <Dashboard username={user} onLogout={handleLogout} />;
+    return <Dashboard userID={userID} username={user} onLogout={handleLogout} />;
   }
 
   // Render Login / Registration UI if not authenticated
