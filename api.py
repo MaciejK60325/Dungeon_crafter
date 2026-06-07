@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel, Field, Session, create_engine, select
+from sqlmodel import SQLModel, Field, Session, create_engine, select, LargeBinary
 from typing import Optional, List
 from contextlib import asynccontextmanager
 import hashlib
@@ -17,6 +17,23 @@ class UserCreate(SQLModel):
     login: str
     password: str
     mail: str
+
+class Rooms(SQLModel, table = True):
+    roomID: Optional[int] = Field(default=None, primary_key=True)
+    userID: int = Field(foreign_key="users.userID")
+    players: str = Field(default='')
+    roomName: str
+    tags: str
+    data: str = Field(default='')
+    roomCode: str
+    img: bytes = Field(default=None)
+
+class RoomCreate(SQLModel):
+    userID: int
+    roomName: str
+    tags: str
+    roomCode: str
+    img: bytes
 
 # --- BAZA ---
 sqlite_file_name = "database/database.db"
@@ -44,11 +61,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-<<<<<<< HEAD
-    allow_origins=["*"],
-=======
     allow_origins=origins,  
->>>>>>> 65fb13608793ebe7a39cbcf4c78422b88bb37537
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,8 +95,58 @@ def login_user(login: str, password: str):
         user = session.exec(select(Users).where(Users.login == login, Users.password == Encode(password))).first()
         if not user:
             raise HTTPException(status_code=400, detail="Niepoprawny login lub hasło")
-        return {"message": "Zalogowano", "user": user.login}
+        return {"message": "Zalogowano", "user": user.login, "userID": user.userID}
     
+
+# --- POKOJE ---
+@app.post("/rooms/", response_model=Rooms)
+def create_rooms(rooms: RoomCreate):
+    db_room = Rooms.from_orm(rooms)
+    with Session(engine) as session:
+        session.add(db_room)
+        session.commit()
+        session.refresh(db_room)
+        return db_room
+
+@app.get("/rooms/")
+def get_rooms_from_userID(userID: int):
+    with Session(engine) as session:
+        rooms = session.exec(select(Rooms).where(Rooms.userID == userID)).all()
+        return rooms
+    
+@app.delete("/rooms/")
+def delete_room(roomID: int):
+    with Session(engine) as session:
+        room = session.exec(select(Rooms).where(Rooms.roomID == roomID)).one()
+        session.delete(room)
+        session.commit()
+
+@app.post("/joinRoom/")
+def join_room(roomCode: str, userID: int):
+    with Session(engine) as session:
+        room = session.exec(select(Rooms).where(Rooms.roomCode == roomCode)).one()
+
+        players = room.players.split(',')
+
+
+        if(str(userID) not in players):
+            players.append(userID)
+            
+            room.players =  ','.join(map(str, players))
+            session.add(room)
+            session.commit()
+            session.refresh(room)
+
+@app.get("/friendRooms/")
+def read_friend_rooms(userID: int):
+    with Session(engine) as session:
+        rooms = session.exec(select(Rooms).where(Rooms.players.like(f'%{userID}%'))).all()
+
+
+        return rooms
+
+
+
 
 # SALT added to password
 SALT = "fishnet"
