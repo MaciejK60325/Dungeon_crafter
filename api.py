@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel, Field, Session, create_engine, select
+from sqlmodel import SQLModel, Field, Session, create_engine, select, LargeBinary
 from typing import Optional, List
 from contextlib import asynccontextmanager
 import hashlib
@@ -26,12 +26,14 @@ class Rooms(SQLModel, table = True):
     tags: str
     data: str = Field(default='')
     roomCode: str
+    img: bytes = Field(default=None)
 
 class RoomCreate(SQLModel):
     userID: int
     roomName: str
     tags: str
     roomCode: str
+    img: bytes
 
 # --- BAZA ---
 sqlite_file_name = "database/database.db"

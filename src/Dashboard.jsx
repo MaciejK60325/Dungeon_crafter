@@ -30,9 +30,11 @@ export default function Dashboard({ userID, username, onLogout }) {
     const [newRoomName, setNewRoomName] = useState('');
     const [newRoomRole, setNewRoomRole] = useState('GM');
     const [newRoomTags, setNewRoomTags] = useState([]);
+    const [newRoomImg, setNewRoomImg] = useState();
     const [isRefreshed, setIsRefreshed] = useState(false);
 
     const availableTags = ["D&D 5e", "Campaign", "One-Shot", "High Fantasy", "Dark Fantasy", "Dungeon Crawl"];
+    const [message, setMessage] = useState({ text: '', type: '' });
 
     useEffect(() => {
         if (!isDarkMode) {
@@ -100,6 +102,13 @@ export default function Dashboard({ userID, username, onLogout }) {
             setLocalImages(prev => ({ ...prev, [roomId]: imageUrl }));
         }
     };
+    const handleNewRoomImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const imageUrl = URL.createObjectURL(file);
+            setNewRoomImg(imageUrl);
+        }
+    }
 
     const handleRemoveImage = (roomId, e) => {
         e.preventDefault();
@@ -109,6 +118,10 @@ export default function Dashboard({ userID, username, onLogout }) {
             return updated;
         });
     };
+    const handleRemoveNewRoomImage = (e) =>{
+        e.preventDefault();
+        setNewRoomImg();
+    }
 
     const handleDeleteRoom = async (roomId, e) => {
         e.preventDefault();
@@ -119,6 +132,7 @@ export default function Dashboard({ userID, username, onLogout }) {
             });
         }
         catch(err){
+            setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
         }
         setIsRefreshed(false)
@@ -143,6 +157,7 @@ export default function Dashboard({ userID, username, onLogout }) {
 
             if(res.ok){
                 setRooms([])
+                setLocalImages({})
                 for(const room in data)
                 {
                     const t = data[room].tags.split(",")
@@ -153,14 +168,18 @@ export default function Dashboard({ userID, username, onLogout }) {
                         room_code: data[room].roomCode,
                         role: 'GM',
                         tags: t,
-                        image_url: ''
+                        image_url: data[room].img
                     };
                     setRooms(prev => [...prev, newRoomPayload]);
+                    (e) => handleImageUpload(data[room].roomID, e)
                 }
+            }else {
+                setMessage({ text: data.detail || "API error: Registration failed", type: "error" });
             }
         }
         catch(err)
         {
+            setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
         }
 
@@ -182,19 +201,19 @@ export default function Dashboard({ userID, username, onLogout }) {
                         room_code: data[room].roomCode,
                         role: 'Player',
                         tags: t,
-                        image_url: ''
+                        image_url: data[room].img
                     };
                     setRooms(prev => [...prev, newRoomPayload]);
                 } 
+            }else {
+                setMessage({ text: data.detail || "API error: Registration failed", type: "error" });
             }
         }
         catch(err)
         {
+            setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
         }
-    }
-    const handleRefreshFriendRooms = async () =>{
-
     }
 
     const handleCreateRoomSubmit = async (e) => {
@@ -211,7 +230,8 @@ export default function Dashboard({ userID, username, onLogout }) {
                     userID: userID,
                     roomName: newRoomName,
                     tags: newRoomTags.toString(),
-                    roomCode: generatedCode
+                    roomCode: generatedCode,
+                    img: newRoomImg
                 })  
             })
             const data = await res.json();
@@ -219,11 +239,12 @@ export default function Dashboard({ userID, username, onLogout }) {
             if (res.ok) {
                 
             } else {
-                
+                setMessage({ text: data.detail || "API error: Registration failed", type: "error" });
             }
         }
         catch(err)
         {
+            setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
         }
 
@@ -234,6 +255,7 @@ export default function Dashboard({ userID, username, onLogout }) {
         setNewRoomRole('GM');
         setNewRoomTags([]);
         setIsModalOpen(false);
+        setNewRoomImg();
     };
 
     const HandleJoinRoom = async () => {
@@ -245,6 +267,7 @@ export default function Dashboard({ userID, username, onLogout }) {
         }
         catch(err)
         {
+            setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
         }   
     }
@@ -297,6 +320,11 @@ export default function Dashboard({ userID, username, onLogout }) {
                             <span className={`tab ${activeTab === 'Player' ? 'active' : ''}`} onClick={() => setActiveTab('Player')}>[Friend's room]</span>
                         </div>
 
+                        {message.text && (
+                            <div className={`message ${message.type}`} style={{ color: message.type === 'error' ? 'red' : 'green', margin: '10px 0' }}>
+                            {message.text}
+                            </div>
+                        )}
                         {loading && <p style={{ textAlign: 'center', color: 'var(--color-accent)' }}>Loading scrolls...</p>}
 
                         <div className="rooms-grid">
@@ -657,6 +685,14 @@ export default function Dashboard({ userID, username, onLogout }) {
                             <div className="form-group">
                                 <label>Dungeon / Room Name</label>
                                 <input type="text" placeholder="e.g. Underdark Lair" value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} required />
+                            </div>
+                            <div className='form-group'>
+                                <label>Room image</label>
+                                <label className="room-image-label">
+                                    <div className="room-image" style={{ backgroundImage: `url(${ newRoomImg || 'https://via.placeholder.com/300?text=Click+to+upload'})`, backgroundColor: '#222' }}></div>
+                                    <input type="file" accept="image/*" onChange={(e) => handleNewRoomImageUpload(e)} style={{ display: 'none' }} />
+                                </label>
+                                {newRoomImg && <button className="remove-img-btn" onClick={(e) => handleRemoveNewRoomImage(e)}>[Remove Image]</button>}
                             </div>
                             <div className="form-group">
                                 <label>Select Tags / Attributes</label>
