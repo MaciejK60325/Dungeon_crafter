@@ -25,16 +25,18 @@ export default function Dashboard({ userID, username, onLogout }) {
     const [activeRoom, setActiveRoom] = useState(null);
     const [activeWorkspaceTab, setActiveWorkspaceTab] = useState(null);
 
+    const defaultRoomImage = 'assets/defaultRoomImage.png'
     // MODAL STATES
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newRoomName, setNewRoomName] = useState('');
     const [newRoomRole, setNewRoomRole] = useState('GM');
     const [newRoomTags, setNewRoomTags] = useState([]);
-    const [newRoomImg, setNewRoomImg] = useState();
+    const [newRoomImg, setNewRoomImg] = useState([defaultRoomImage, null]);
     const [isRefreshed, setIsRefreshed] = useState(false);
 
-    const availableTags = ["D&D 5e", "Campaign", "One-Shot", "High Fantasy", "Dark Fantasy", "Dungeon Crawl"];
+    const availableTags = ["D&D 5e", "Campaign", "One-Shot", "High Fantasy", "Low fantasy", "Dark Fantasy", "Dungeon Crawl", "Sci-fi"];
     const [message, setMessage] = useState({ text: '', type: '' });
+    
 
     useEffect(() => {
         if (!isDarkMode) {
@@ -106,7 +108,8 @@ export default function Dashboard({ userID, username, onLogout }) {
         const file = e.target.files[0];
         if (file) {
             const imageUrl = URL.createObjectURL(file);
-            setNewRoomImg(imageUrl);
+            setNewRoomImg([imageUrl,file]);
+            console.log(file)
         }
     }
 
@@ -120,7 +123,7 @@ export default function Dashboard({ userID, username, onLogout }) {
     };
     const handleRemoveNewRoomImage = (e) =>{
         e.preventDefault();
-        setNewRoomImg();
+        setNewRoomImg([defaultRoomImage, null]);
     }
 
     const handleDeleteRoom = async (roomId, e) => {
@@ -162,16 +165,20 @@ export default function Dashboard({ userID, username, onLogout }) {
                 {
                     const t = data[room].tags.split(",")
 
+                    const i_url = defaultRoomImage
+                    if(data[room].img != defaultRoomImage && data[room].img != null)
+                        i_url = URL.createObjectURL(data[room].img)
+
                     const newRoomPayload = {
                         id: data[room].roomID,
                         name: data[room].roomName,
                         room_code: data[room].roomCode,
                         role: 'GM',
                         tags: t,
-                        image_url: data[room].img
+                        image_url: i_url
                     };
                     setRooms(prev => [...prev, newRoomPayload]);
-                    (e) => handleImageUpload(data[room].roomID, e)
+                    setLocalImages(prev => ({ ...prev, [data[room].roomID]: i_url }))
                 }
             }else {
                 setMessage({ text: data.detail || "API error: Registration failed", type: "error" });
@@ -218,11 +225,16 @@ export default function Dashboard({ userID, username, onLogout }) {
 
     const handleCreateRoomSubmit = async (e) => {
         e.preventDefault();
-        if (!newRoomName.trim()) return;
+        
 
         const generatedCode = generatePhasmoCode();
 
         try {
+            const t_img = newRoomImg[0] != defaultRoomImage && newRoomImg != null ? newRoomImg[1] : newRoomImg[0]
+            
+            
+            if (!newRoomName.trim()) return;
+
             const res = await fetch(`${API_URL}/rooms/`,{
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -231,7 +243,7 @@ export default function Dashboard({ userID, username, onLogout }) {
                     roomName: newRoomName,
                     tags: newRoomTags.toString(),
                     roomCode: generatedCode,
-                    img: newRoomImg
+                    img: t_img
                 })  
             })
             const data = await res.json();
@@ -255,7 +267,7 @@ export default function Dashboard({ userID, username, onLogout }) {
         setNewRoomRole('GM');
         setNewRoomTags([]);
         setIsModalOpen(false);
-        setNewRoomImg();
+        setNewRoomImg([defaultRoomImage, null]);
     };
 
     const HandleJoinRoom = async () => {
@@ -264,6 +276,7 @@ export default function Dashboard({ userID, username, onLogout }) {
                 method: "POST",
             });
             const data = await res.json();
+            setIsRefreshed(false)
         }
         catch(err)
         {
@@ -329,7 +342,7 @@ export default function Dashboard({ userID, username, onLogout }) {
 
                         <div className="rooms-grid">
                             {filteredRooms.map(room => {
-                                const hasCustomImage = localImages[room.id] || room.image_url;
+                                const hasCustomImage = (localImages[room.id] || room.image_url) && (localImages[room.id != defaultRoomImage]);
                                 return (
                                     <div key={room.id} className="room-card" style={{ position: 'relative' }}>
                                         {activeTab === 'GM' && (
@@ -689,10 +702,10 @@ export default function Dashboard({ userID, username, onLogout }) {
                             <div className='form-group'>
                                 <label>Room image</label>
                                 <label className="room-image-label">
-                                    <div className="room-image" style={{ backgroundImage: `url(${ newRoomImg || 'https://via.placeholder.com/300?text=Click+to+upload'})`, backgroundColor: '#222' }}></div>
+                                    <div className="room-image" style={{ backgroundImage: `url(${ newRoomImg[0] || 'https://via.placeholder.com/300?text=Click+to+upload'})`, backgroundColor: '#222' }}></div>
                                     <input type="file" accept="image/*" onChange={(e) => handleNewRoomImageUpload(e)} style={{ display: 'none' }} />
                                 </label>
-                                {newRoomImg && <button className="remove-img-btn" onClick={(e) => handleRemoveNewRoomImage(e)}>[Remove Image]</button>}
+                                {(newRoomImg && newRoomImg[0]!=defaultRoomImage) && <button className="remove-img-btn" onClick={(e) => handleRemoveNewRoomImage(e)}>[Remove Image]</button>}
                             </div>
                             <div className="form-group">
                                 <label>Select Tags / Attributes</label>
