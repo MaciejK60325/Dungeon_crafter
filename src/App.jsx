@@ -8,6 +8,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState('');
   const [activeRoom, setActiveRoom] = useState(null);
+  const [userID, setUserID] = useState('');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,6 +37,8 @@ function App() {
       if (res.ok) {
         setMessage({ text: "Authorization successful!", type: "success" });
         setUser(data.user);
+        setUserID(data.userID)
+        console.log(data.userID)
         setIsLoggedIn(true);
       } else {
         setMessage({ text: data.detail || "Login failed: Invalid credentials", type: "error" });
@@ -88,7 +91,7 @@ function App() {
   // View 1: Active VTT session
   if (isLoggedIn && activeRoom) {
     return (
-      <Battlemap 
+      <Battlemap
         roomId={activeRoom.roomId}
         role={activeRoom.role}
         roomName={activeRoom.roomName}
@@ -96,42 +99,44 @@ function App() {
         onLeave={handleLeaveRoom}
       />
     );
-  }
+    if (isLoggedIn) {
+      return <Dashboard userID={userID} username={user} onLogout={handleLogout} />;
+    }
 
-  // View 2: Dashboard
-  if (isLoggedIn) {
+    // View 2: Dashboard
+    if (isLoggedIn) {
+      return (
+        <Dashboard
+          username={user}
+          onLogout={handleLogout}
+          onEnterRoom={handleEnterRoom}
+        />
+      );
+    }
+
+    // View 3: Auth Forms
     return (
-      <Dashboard 
-        username={user} 
-        onLogout={handleLogout} 
-        onEnterRoom={handleEnterRoom} 
-      />
-    );
+      <div className="container">
+        <div className="card">
+          <h1>Dungeon Crafter</h1>
+          <h2>{isLogin ? 'Login' : 'Registration'}</h2>
+          <form onSubmit={handleSubmit}>
+            <input type="text" placeholder="Username / Nickname" value={username} onChange={(e) => setUsername(e.target.value)} required />
+            {!isLogin && <input type="email" placeholder="Your email" value={email} onChange={(e) => setEmail(e.target.value)} required />}
+            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            {!isLogin && <input type="password" placeholder="Confirm password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />}
+            {message.text && <div className={`message ${message.type}`} style={{ color: message.type === 'error' ? 'red' : 'green', margin: '10px 0' }}>{message.text}</div>}
+            <button type="submit">{isLogin ? 'Sign In' : 'Create Account'}</button>
+          </form>
+          <p style={{ fontSize: '13px', marginTop: '15px' }}>
+            {isLogin ? "Don't have an account? " : 'Already have an account? '}
+            <span onClick={() => { setIsLogin(!isLogin); setMessage({ text: '', type: '' }); }} style={{ color: '#bb86fc', cursor: 'pointer', textDecoration: 'underline' }}>
+              {isLogin ? 'Register here' : 'Login here'}
+            </span>
+          </p>
+        </div>
+      </div >
+    )
   }
 
-  // View 3: Auth Forms
-  return (
-    <div className="container">
-      <div className="card">
-        <h1>Dungeon Crafter</h1>
-        <h2>{isLogin ? 'Login' : 'Registration'}</h2>
-        <form onSubmit={handleSubmit}>
-          <input type="text" placeholder="Username / Nickname" value={username} onChange={(e) => setUsername(e.target.value)} required />
-          {!isLogin && <input type="email" placeholder="Your email" value={email} onChange={(e) => setEmail(e.target.value)} required />}
-          <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          {!isLogin && <input type="password" placeholder="Confirm password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />}
-          {message.text && <div className={`message ${message.type}`} style={{ color: message.type === 'error' ? 'red' : 'green', margin: '10px 0' }}>{message.text}</div>}
-          <button type="submit">{isLogin ? 'Sign In' : 'Create Account'}</button>
-        </form>
-        <p style={{ fontSize: '13px', marginTop: '15px' }}>
-          {isLogin ? "Don't have an account? " : 'Already have an account? '}
-          <span onClick={() => { setIsLogin(!isLogin); setMessage({ text: '', type: '' }); }} style={{ color: '#bb86fc', cursor: 'pointer', textDecoration: 'underline' }}>
-            {isLogin ? 'Register here' : 'Login here'}
-          </span>
-        </p>
-      </div>
-    </div >
-  )
-}
-
-export default App
+  export default App
