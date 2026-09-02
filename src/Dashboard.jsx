@@ -9,6 +9,8 @@ export default function Dashboard({ username, onLogout, onEnterRoom }) {
     const [selectedTags, setSelectedTags] = useState([]);
     const [joinCode, setJoinCode] = useState('');
     const [revealedCodes, setRevealedCodes] = useState([]);
+    const [copyNotification, setCopyNotification] = useState(false);
+    const [warningNotification, setWarningNotification] = useState('');
 
     // MODAL STATES
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,6 +74,31 @@ export default function Dashboard({ username, onLogout, onEnterRoom }) {
         }
     };
 
+    const toggleRoomStatus = (roomId, e) => {
+        e.preventDefault();
+        setRooms(prev => prev.map(r => r.id === roomId && !r.isFriendRoom ? { ...r, isOpen: !r.isOpen } : r));
+    };
+
+    const copyRoomCode = (code, e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(code || '');
+        setCopyNotification(true);
+        setTimeout(() => {
+            setCopyNotification(false);
+        }, 2000);
+    };
+
+    const handleTryEnterRoom = (room) => {
+        if (!room.isOpen) {
+            setWarningNotification(`Ten pokój [${room.name}] jest obecnie zamknięty przez GM-a!`);
+            setTimeout(() => {
+                setWarningNotification('');
+            }, 3000);
+            return;
+        }
+        onEnterRoom(room.room_code, room.role, room.name);
+    };
+
     const handleCreateRoomSubmit = (e) => {
         e.preventDefault();
         if (!newRoomName.trim()) return;
@@ -84,7 +111,8 @@ export default function Dashboard({ username, onLogout, onEnterRoom }) {
             role: newRoomRole,
             tags: [newRoomRole, ...newRoomTags], 
             image_url: '',
-            isFriendRoom: false 
+            isFriendRoom: false,
+            isOpen: true // Zawsze otwarty domyślnie przy tworzeniu
         };
 
         setRooms(prev => [...prev, newRoom]);
@@ -108,7 +136,8 @@ export default function Dashboard({ username, onLogout, onEnterRoom }) {
             role: "Player", 
             tags: ["Player", "D&D 5e"], 
             image_url: '',
-            isFriendRoom: true 
+            isFriendRoom: true,
+            isOpen: true // Domyślnie symulacja otwartego pokoju z kodu
         };
         
         setRooms(prev => [...prev, friendRoom]);
@@ -159,7 +188,7 @@ export default function Dashboard({ username, onLogout, onEnterRoom }) {
                                 onChange={(e) => setJoinCode(e.target.value)}
                                 style={{ width: '100%', padding: '8px', borderRadius: '4px', textTransform: 'uppercase', textAlign: 'center', fontWeight: 'bold' }}
                             />
-                            <button type="submit" className="apply-btn" style={{ padding: '8px', marginTop: 0, width: 'auto' }}>Join</button>
+                            <button type="submit" className="apply-btn" style={{ padding: '8px', marginTop: '0', width: 'auto' }}>Join</button>
                         </form>
 
                         <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', width: '100%', margin: '15px 0' }} />
@@ -188,7 +217,27 @@ export default function Dashboard({ username, onLogout, onEnterRoom }) {
                                     {!room.isFriendRoom && (
                                         <button className="delete-room-btn" onClick={(e) => handleDeleteRoom(room.id, e)} title="Delete Room"></button>
                                     )}
-                                    <h3>[{room.name}]</h3>
+                                    
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                        <h3 style={{ margin: 0 }}>[{room.name}]</h3>
+                                        <span 
+                                            onClick={(e) => !room.isFriendRoom && toggleRoomStatus(room.id, e)} 
+                                            title={
+                                                room.isFriendRoom 
+                                                    ? (room.isOpen ? "Status pokoju znajomego: Otwarty" : "Status pokoju znajomego: Zamknięty")
+                                                    : (room.isOpen ? "Status: Otwarty (Kliknij, aby zamknąć)" : "Status: Zamknięty (Kliknij, aby otworzyć)")
+                                            }
+                                            style={{ 
+                                                width: '10px', 
+                                                height: '10px', 
+                                                borderRadius: '50%', 
+                                                backgroundColor: room.isOpen ? '#4caf50' : '#f44336', 
+                                                cursor: room.isFriendRoom ? 'default' : 'pointer',
+                                                display: 'inline-block',
+                                                boxShadow: room.isOpen ? '0 0 6px rgba(76, 175, 80, 0.6)' : '0 0 6px rgba(244, 67, 54, 0.6)'
+                                            }}
+                                        ></span>
+                                    </div>
 
                                     <label className="room-image-label">
                                         <div className="room-image" style={{ backgroundImage: `url(${room.image_url || 'https://via.placeholder.com/300?text=Okładka+Pokoju'})`, backgroundColor: '#222', cursor: 'pointer' }}></div>
@@ -203,13 +252,23 @@ export default function Dashboard({ username, onLogout, onEnterRoom }) {
 
                                     <div className="code-display-container">
                                         <span>Kod pokoju:</span>
-                                        <span className="code-value">{revealedCodes.includes(room.id) ? room.room_code : '•••••'}</span>
+                                        <span className="code-value" onClick={(e) => copyRoomCode(room.room_code, e)} style={{ cursor: 'pointer' }} title="Click to copy">
+                                            {revealedCodes.includes(room.id) ? room.room_code : '•••••'}
+                                        </span>
                                         <button className={`eye-btn ${!revealedCodes.includes(room.id) ? 'hidden-mode' : ''}`} onClick={() => toggleCodeVisibility(room.id)}></button>
                                     </div>
 
                                     <div className="room-actions">
-                                        <button className="active-role" style={{ width: '100%' }} onClick={() => onEnterRoom(room.room_code, room.role, room.name)}>
-                                            Enter Room ({room.role})
+                                        <button 
+                                            className="active-role" 
+                                            style={{ 
+                                                width: '100%', 
+                                                opacity: room.isOpen ? 1 : 0.6, 
+                                                borderColor: room.isOpen ? 'var(--color-accent)' : '#555' 
+                                            }} 
+                                            onClick={() => handleTryEnterRoom(room)}
+                                        >
+                                            {room.isOpen ? `Enter Room (${room.role})` : 'Pokój Zamknięty'}
                                         </button>
                                     </div>
                                 </div>
@@ -223,6 +282,44 @@ export default function Dashboard({ username, onLogout, onEnterRoom }) {
                             )}
                         </div>
                     </main>
+                </div>
+            )}
+
+            {copyNotification && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '30px',
+                    right: '30px',
+                    backgroundColor: '#323232',
+                    color: '#fff',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    border: '1px solid #444',
+                    zIndex: 99999,
+                    fontSize: '14px',
+                    fontWeight: '500'
+                }}>
+                    Room code copied to clipboard!
+                </div>
+            )}
+
+            {warningNotification && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '30px',
+                    right: '30px',
+                    backgroundColor: '#5c1d1d',
+                    color: '#fff',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                    border: '1px solid #f44336',
+                    zIndex: 99999,
+                    fontSize: '14px',
+                    fontWeight: '500'
+                }}>
+                    {warningNotification}
                 </div>
             )}
 
