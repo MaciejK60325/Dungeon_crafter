@@ -197,6 +197,16 @@ def delete_room(roomID: int):
         session.delete(room)
         session.commit()
 
+@app.put("/rooms/{roomID}")
+def edit_room(roomID: int, roomData: RoomCreate):
+    with Session(engine) as session:
+        room = session.exec(select(Rooms).where(Rooms.roomID == roomID)).one()
+        room.roomName = roomData.roomName
+        room.tags = roomData.tags
+        session.add(room)
+        session.commit()
+        session.refresh(room)
+
 @app.post("/joinRoom/")
 def join_room(roomCode: str, userID: int):
     with Session(engine) as session:
