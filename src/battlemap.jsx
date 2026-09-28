@@ -29,6 +29,11 @@ export default function Battlemap({ roomId, role, roomName, username, onLeave })
     const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
     const [selectionBox, setSelectionBox] = useState(null);
 
+    // --- Kostka ---
+    const [diceHistory, setDiceHistory] = useState([])
+    const [isDiceMenuOpen, setIsDiceMenuOpen] = useState(false);
+
+
     // --- NARZĘDZIA, PINGI I MGŁA WOJNY ---
     const [pings, setPings] = useState([]); 
     const [activeTool, setActiveTool] = useState('select'); // 'select' | 'fog' | 'ping'
@@ -226,6 +231,13 @@ export default function Battlemap({ roomId, role, roomName, username, onLeave })
         return matchesTab && matchesFav && matchesSearch;
     }) : [];
 
+    const rollADice = (type) =>{
+        const roll = Math.floor(Math.random()*type)+1;
+        const dice = {"value": roll, "d": type}
+        setDiceHistory(prev => [...prev, dice]);
+        console.log(dice);
+    };
+
     return (
         <div className="room-workspace" onClick={() => {
             setSelectedTokenIds([]);
@@ -286,6 +298,35 @@ export default function Battlemap({ roomId, role, roomName, username, onLeave })
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                            )}
+                        </div>
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <button
+                                type="button"
+                                className={`vtt-players-toggle-btn ${isDiceMenuOpen ? 'active' : ''}`}
+                                onClick={() => setIsDiceMenuOpen(!isDiceMenuOpen)}
+                                title="Manage Dice"
+                            >
+                                🎲
+                            </button>
+                            {isDiceMenuOpen && (
+                                <div className="vtt-players-dropdown-card">
+                                    <div className="room-code-share-row">
+                                        <button type="button" className="visibility-toggle-btn" onClick={() => rollADice(4)}>d4</button>
+                                        <button type="button" className="visibility-toggle-btn" onClick={() => rollADice(6)}>d6</button>
+                                        <button type="button" className="visibility-toggle-btn" onClick={() => rollADice(8)}>d8</button>
+                                        <button type="button" className="visibility-toggle-btn" onClick={() => rollADice(12)}>d12</button>
+                                        <button type="button" className="visibility-toggle-btn" onClick={() => rollADice(20)}>d20</button>
+                                    </div>
+                                    <div>
+                                        {Array.isArray(diceHistory) && diceHistory.map(dice => (
+                                            <div key={Math.random()}>
+                                                v: {dice['value']} d:{dice['d']}
+                                            </div>
+                                        ))}
+                                    </div>
+
                                 </div>
                             )}
                         </div>
