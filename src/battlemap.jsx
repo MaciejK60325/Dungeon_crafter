@@ -319,10 +319,10 @@ export default function Battlemap({ roomId, role, roomName, username, onLeave })
                                         <button type="button" className="visibility-toggle-btn" onClick={() => rollADice(12)}>d12</button>
                                         <button type="button" className="visibility-toggle-btn" onClick={() => rollADice(20)}>d20</button>
                                     </div>
-                                    <div>
+                                    <div style={{height: '150px', overflow: 'auto'}}>
                                         {Array.isArray(diceHistory) && diceHistory.map(dice => (
                                             <div key={Math.random()}>
-                                                v: {dice['value']} d:{dice['d']}
+                                                rolled <span style={{color: 'cyan'}}>{dice['value']}</span> with <span style={{color: 'cyan'}}>d{dice['d']}</span>
                                             </div>
                                         ))}
                                     </div>
