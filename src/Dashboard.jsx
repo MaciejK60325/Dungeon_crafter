@@ -26,6 +26,15 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
     const [newRoomImg, setNewRoomImg] = useState([defaultRoomImage, null]);
     const [isRefreshed, setIsRefreshed] = useState(false);
 
+    // EDIT MODAL STATES
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editedRoomID, setEditedRoomID] = useState();
+    const [editedRoomName, setEditedRoomName] = useState('');
+    const [editedRoomTags, setEditedRoomTags] = useState('');
+    const [editedRoomImg, setEditedRoomImg] = useState([defaultRoomImage, null]);
+    const [editedRoomCode, setEditedRoomCode] = useState('');
+
+
     const availableTags = ["D&D 5e", "Cyberpunk", "Campaign", "One-Shot", "High Fantasy", "Dark Fantasy", "Dungeon Crawl", "sci-fi"];
     const [message, setMessage] = useState({ text: '', type: '' });
 
@@ -54,6 +63,14 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
             setNewRoomTags(newRoomTags.filter(t => t !== tag));
         } else {
             setNewRoomTags([...newRoomTags, tag]);
+        }
+    };
+
+    const handleEditModalTagToggle = (tag) => {
+        if (editedRoomTags.includes(tag)) {
+            setEditedRoomTags(editedRoomTags.filter(t => t !== tag));
+        } else {
+            setEditedRoomTags([...editedRoomTags, tag]);
         }
     };
 
@@ -235,8 +252,6 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
         setNewRoomImg([defaultRoomImage, null]);
     };
 
-<<<<<<< Updated upstream
-=======
     const handleEditRoomSubmit = async (e) => {
         e.preventDefault();
         console.log("edit room");
@@ -247,6 +262,17 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
             //if (!newRoomName.trim()) return;
 
             const res = await fetch(`${API_URL}/rooms/${editedRoomID}`, {
+    const handleEditRoomSubmit = async(e) =>
+    {
+        e.preventDefault();
+        console.log("edit room");
+
+        try{
+            //const t_img = editedRoomImg[0] != defaultRoomImage && editedRoomImg != null ? editedRoomImg[1] : editedRoomImg[0]
+            
+            //if (!newRoomName.trim()) return;
+
+            const res = await fetch(`${API_URL}/rooms/${editedRoomID}`,{
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -262,6 +288,14 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
             }
         }
         catch (err) {
+                })  
+            })
+            if(res.ok)
+            {
+                
+            }
+        }
+        catch(err){
             console.error("API Connection Error:", err);
         }
         setIsRefreshed(false);
@@ -269,6 +303,8 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
     };
 
     const setEditedRoomValues = (room) => {
+    
+    const setEditedRoomValues = (room) =>{
         setIsEditModalOpen(true);
         setEditedRoomID(room.id);
         setEditedRoomName(room.name);
@@ -278,7 +314,9 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
 
     };
 
->>>>>>> Stashed changes
+
+
+
     const HandleJoinRoom = async () => {
         try {
             const res = await fetch(`${API_URL}/joinRoom/?roomCode=${joinCode}&userID=${userID}`, {
@@ -368,33 +406,33 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                         <h3 style={{ margin: 0 }}>[{room.name}]</h3>
-<<<<<<< Updated upstream
                                         <span 
                                             onClick={(e) => !room.isFriendRoom && toggleRoomStatus(room.id, e)} 
-=======
                                         <span
                                             onClick={(e) => activeTab == 'GM' && toggleRoomStatus(room.id, e)}
->>>>>>> Stashed changes
+
+                                            onClick={(e) => activeTab =='GM' && toggleRoomStatus(room.id, e)} 
+
                                             title={
                                                 room.isFriendRoom
                                                     ? (room.isOpen ? "Status pokoju znajomego: Otwarty" : "Status pokoju znajomego: Zamknięty")
                                                     : (room.isOpen ? "Status: Otwarty (Kliknij, aby zamknąć)" : "Status: Zamknięty (Kliknij, aby otworzyć)")
                                             }
-<<<<<<< Updated upstream
                                             style={{ 
                                                 width: '10px', 
                                                 height: '10px', 
                                                 borderRadius: '50%', 
                                                 backgroundColor: room.isOpen ? '#4caf50' : '#f44336', 
                                                 cursor: room.isFriendRoom ? 'default' : 'pointer',
-=======
                                             style={{
                                                 width: '10px',
                                                 height: '10px',
                                                 borderRadius: '50%',
                                                 backgroundColor: room.isOpen ? '#4caf50' : '#f44336',
                                                 cursor: activeTab === 'Player' ? 'default' : 'pointer',
->>>>>>> Stashed changes
+
+                                                cursor: activeTab === 'Player' ? 'default' : 'pointer',
+
                                                 display: 'inline-block',
                                                 boxShadow: room.isOpen ? '0 0 6px rgba(76, 175, 80, 0.6)' : '0 0 6px rgba(244, 67, 54, 0.6)'
                                             }}
@@ -406,11 +444,11 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                         <input type="file" accept="image/*" onChange={(e) => handleImageUpload(room.id, e)} style={{ display: 'none' }} />
                                     </label>
 
-<<<<<<< Updated upstream
                                     {room.image_url && <button className="remove-img-btn" onClick={(e) => handleRemoveImage(room.id, e)}>[Remove Image]</button>}
-=======
                                     {room.image_url && room.image_url != defaultRoomImage && <button className="remove-img-btn" onClick={(e) => handleRemoveImage(room.id, e)}>[Remove Image]</button>}
->>>>>>> Stashed changes
+
+                                    {room.image_url && room.image_url!= defaultRoomImage && <button className="remove-img-btn" onClick={(e) => handleRemoveImage(room.id, e)}>[Remove Image]</button>}
+
 
                                     <div className="room-tags" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', margin: '5px 0' }}>
                                         {room.tags && room.tags.map(t => <span key={t} style={{ fontSize: '10px', background: 'var(--bg-main)', padding: '2px 6px', borderRadius: '3px', color: 'var(--color-accent)' }}>{t}</span>)}
@@ -423,9 +461,7 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                         </span>
                                         <button className={`eye-btn ${!revealedCodes.includes(room.id) ? 'hidden-mode' : ''}`} onClick={() => toggleCodeVisibility(room.id)}></button>
                                     </div>
-<<<<<<< Updated upstream
 
-=======
                                     {activeTab === 'GM' && (<div className='room-actions'>
                                         <button
                                             className="active-role"
@@ -437,7 +473,19 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                             onClick={() => setEditedRoomValues(room)}
                                         >Edit Room</button>
                                     </div>)}
->>>>>>> Stashed changes
+
+                                    {activeTab === 'GM' && (<div className='room-actions'>
+                                        <button 
+                                        className="active-role" 
+                                        style={{ 
+                                            width: '100%', 
+                                            opacity: room.isOpen ? 1 : 0.6, 
+                                            borderColor: room.isOpen ? 'var(--color-accent)' : '#555' 
+                                        }} 
+                                        onClick={() => setEditedRoomValues(room)}
+                                        >Edit Room</button>
+                                    </div>)}
+
                                     <div className="room-actions">
                                         <button
                                             className="active-role"
@@ -556,8 +604,6 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                     </div>
                 </div>
             )}
-<<<<<<< Updated upstream
-=======
             {/* Room Edit Modal Window */}
             {isEditModalOpen && (
                 <div className='modal-overlay'>
@@ -585,6 +631,10 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                                 type="checkbox"
                                                 checked={editedRoomTags.includes(tag)}
                                                 onChange={() => handleEditModalTagToggle(tag)}
+                                            <input 
+                                                type="checkbox" 
+                                                checked={editedRoomTags.includes(tag)} 
+                                                onChange={() => handleEditModalTagToggle(tag)} 
                                             />
                                             {tag}
                                         </label>
@@ -600,7 +650,8 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                 </div>
 
             )}
->>>>>>> Stashed changes
+
+
         </div>
     );
 }
