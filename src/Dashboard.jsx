@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
-import CharacterCreator from './CharacterCreator';
 
-export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
+export default function Dashboard({userID, username, onLogout, onEnterRoom }) {
     const API_URL = "http://127.0.0.1:8000";
 
     const [rooms, setRooms] = useState([]);
-    const [currentNav, setCurrentNav] = useState('rooms');
+    const [currentNav, setCurrentNav] = useState('rooms'); 
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [activeTab, setActiveTab] = useState('GM');
     const [selectedTags, setSelectedTags] = useState([]);
@@ -90,12 +89,12 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
     const handleDeleteRoom = async (roomId, e) => {
         e.preventDefault();
 
-        try {
+        try{
             const res = await fetch(`${API_URL}/rooms/?roomID=${roomId}`, {
                 method: 'DELETE'
             });
         }
-        catch (err) {
+        catch(err){
             setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
         }
@@ -136,22 +135,23 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
         onEnterRoom(room.room_code, room.role, room.name);
     };
 
-    const handleRefreshRooms = async () => {
+    const handleRefreshRooms = async () =>{     
         setIsRefreshed(true)
-        try {
+        try{
             const res = await fetch(`${API_URL}/rooms/?userID=${userID}`, {
                 method: "GET"
             });
             const data = await res.json()
 
-            if (res.ok) {
+            if(res.ok){
                 setRooms([])
                 setLocalImages({})
-                for (const room in data) {
+                for(const room in data)
+                {
                     const t = data[room].tags.split(",")
 
                     const i_url = defaultRoomImage
-                    if (data[room].img != defaultRoomImage && data[room].img != null)
+                    if(data[room].img != defaultRoomImage && data[room].img != null)
                         i_url = URL.createObjectURL(data[room].img)
 
                     const newRoomPayload = {
@@ -166,23 +166,26 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                     setRooms(prev => [...prev, newRoomPayload]);
                     setLocalImages(prev => ({ ...prev, [data[room].roomID]: i_url }))
                 }
-            } else {
+            }else {
                 setMessage({ text: data.detail || "API error: Registration failed", type: "error" });
             }
         }
-        catch (err) {
+        catch(err)
+        {
             setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
         }
 
-        try {
+        try{
             const res = await fetch(`${API_URL}/friendRooms/?userID=${userID}`, {
                 method: "GET"
             });
             const data = await res.json()
 
-            if (res.ok) {
-                for (const room in data) {
+            if(res.ok)
+            {
+                for(const room in data)
+                {
                     const t = data[room].tags.split(",")
 
                     const newRoomPayload = {
@@ -195,12 +198,13 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                         isOpen: true
                     };
                     setRooms(prev => [...prev, newRoomPayload]);
-                }
-            } else {
+                } 
+            }else {
                 setMessage({ text: data.detail || "API error: Registration failed", type: "error" });
             }
         }
-        catch (err) {
+        catch(err)
+        {
             setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
         }
@@ -208,17 +212,17 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
 
     const handleCreateRoomSubmit = async (e) => {
         e.preventDefault();
-
+        
 
         const generatedCode = generateRoomCode();
 
         try {
             const t_img = newRoomImg[0] != defaultRoomImage && newRoomImg != null ? newRoomImg[1] : newRoomImg[0]
-
-
+            
+            
             if (!newRoomName.trim()) return;
 
-            const res = await fetch(`${API_URL}/rooms/`, {
+            const res = await fetch(`${API_URL}/rooms/`,{
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -227,23 +231,24 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                     tags: newRoomTags.toString(),
                     roomCode: generatedCode,
                     img: t_img
-                })
+                })  
             })
             const data = await res.json();
 
             if (res.ok) {
-
+                
             } else {
                 setMessage({ text: data.detail || "API error: Registration failed", type: "error" });
             }
         }
-        catch (err) {
+        catch(err)
+        {
             setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
         }
 
         setIsRefreshed(false)
-
+        
         // setRooms(prev => [...prev, newRoomPayload]);
         setNewRoomName('');
         setNewRoomRole('GM');
@@ -252,16 +257,6 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
         setNewRoomImg([defaultRoomImage, null]);
     };
 
-    const handleEditRoomSubmit = async (e) => {
-        e.preventDefault();
-        console.log("edit room");
-
-        try {
-            //const t_img = editedRoomImg[0] != defaultRoomImage && editedRoomImg != null ? editedRoomImg[1] : editedRoomImg[0]
-
-            //if (!newRoomName.trim()) return;
-
-            const res = await fetch(`${API_URL}/rooms/${editedRoomID}`, {
     const handleEditRoomSubmit = async(e) =>
     {
         e.preventDefault();
@@ -281,13 +276,6 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                     tags: editedRoomTags.toString(),
                     roomCode: editedRoomCode,
                     img: editedRoomImg
-                })
-            })
-            if (res.ok) {
-
-            }
-        }
-        catch (err) {
                 })  
             })
             if(res.ok)
@@ -301,8 +289,6 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
         setIsRefreshed(false);
         setIsEditModalOpen(false);
     };
-
-    const setEditedRoomValues = (room) => {
     
     const setEditedRoomValues = (room) =>{
         setIsEditModalOpen(true);
@@ -314,25 +300,23 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
 
     };
 
-
-
-
     const HandleJoinRoom = async () => {
-        try {
-            const res = await fetch(`${API_URL}/joinRoom/?roomCode=${joinCode}&userID=${userID}`, {
+        try{
+            const res = await fetch(`${API_URL}/joinRoom/?roomCode=${joinCode}&userID=${userID}`,{
                 method: "POST",
             });
             const data = await res.json();
             setIsRefreshed(false)
         }
-        catch (err) {
+        catch(err)
+        {
             setMessage({ text: "Critical error: No response from API server", type: "error" });
             console.error("API Connection Error:", err);
-        }
+        }   
     }
 
     const filteredRooms = rooms.filter(room => {
-        if (room.role != activeTab) return false
+        if(room.role != activeTab) return false
         if (selectedTags.length === 0) return true;
         return room.tags && selectedTags.every(tag => room.tags.includes(tag));
     });
@@ -346,7 +330,6 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                     <span className={currentNav === 'rooms' ? 'active-tab' : ''} onClick={() => setCurrentNav('rooms')}>[Rooms]</span>
                     <span className={currentNav === 'assets' ? 'active-tab' : ''} onClick={() => setCurrentNav('assets')}>[Assets]</span>
                     <span className={currentNav === 'settings' ? 'active-tab' : ''} onClick={() => setCurrentNav('settings')}>[Settings]</span>
-                    <span className={currentNav === 'characters' ? 'active-tab' : ''} onClick={() => setCurrentNav('characters')}>[Characters]</span>
                 </div>
                 <div className="nav-right">
                     <span className="profile-name">[{username}]</span>
@@ -355,20 +338,16 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
             </header>
 
             {/* Placeholder screens for other nav tabs */}
-            {currentNav !== 'rooms' && currentNav !== 'characters' && (
+            {currentNav !== 'rooms' && (
                 <div style={{ padding: '40px', color: 'var(--text-muted)', textAlign: 'center' }}>
                     <h2>[{currentNav.toUpperCase()}] Screen Content Placeholder</h2>
                 </div>
             )}
 
-            {currentNav === 'characters' && (
-                <CharacterCreator userID={userID} />
-            )}
-
             {/* Core Rooms Grid Dashboard View */}
             {currentNav === 'rooms' && (
                 <div className="main-layout">
-                    {isRefreshed === false && handleRefreshRooms()}
+                    {isRefreshed===false && handleRefreshRooms()}
                     <aside className="filters-sidebar">
 
                         <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)', width: '100%', margin: '15px 0' }} />
@@ -393,7 +372,7 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
 
                         {message.text && (
                             <div className={`message ${message.type}`} style={{ color: message.type === 'error' ? 'red' : 'green', margin: '10px 0' }}>
-                                {message.text}
+                            {message.text}
                             </div>
                         )}
 
@@ -403,18 +382,13 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                     {activeTab === 'GM' && (
                                         <button className="delete-room-btn" onClick={(e) => handleDeleteRoom(room.id, e)} title="Delete Room"></button>
                                     )}
-
+                                    
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                                         <h3 style={{ margin: 0 }}>[{room.name}]</h3>
                                         <span 
-                                            onClick={(e) => !room.isFriendRoom && toggleRoomStatus(room.id, e)} 
-                                        <span
-                                            onClick={(e) => activeTab == 'GM' && toggleRoomStatus(room.id, e)}
-
                                             onClick={(e) => activeTab =='GM' && toggleRoomStatus(room.id, e)} 
-
                                             title={
-                                                room.isFriendRoom
+                                                room.isFriendRoom 
                                                     ? (room.isOpen ? "Status pokoju znajomego: Otwarty" : "Status pokoju znajomego: Zamknięty")
                                                     : (room.isOpen ? "Status: Otwarty (Kliknij, aby zamknąć)" : "Status: Zamknięty (Kliknij, aby otworzyć)")
                                             }
@@ -423,16 +397,7 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                                 height: '10px', 
                                                 borderRadius: '50%', 
                                                 backgroundColor: room.isOpen ? '#4caf50' : '#f44336', 
-                                                cursor: room.isFriendRoom ? 'default' : 'pointer',
-                                            style={{
-                                                width: '10px',
-                                                height: '10px',
-                                                borderRadius: '50%',
-                                                backgroundColor: room.isOpen ? '#4caf50' : '#f44336',
                                                 cursor: activeTab === 'Player' ? 'default' : 'pointer',
-
-                                                cursor: activeTab === 'Player' ? 'default' : 'pointer',
-
                                                 display: 'inline-block',
                                                 boxShadow: room.isOpen ? '0 0 6px rgba(76, 175, 80, 0.6)' : '0 0 6px rgba(244, 67, 54, 0.6)'
                                             }}
@@ -444,11 +409,7 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                         <input type="file" accept="image/*" onChange={(e) => handleImageUpload(room.id, e)} style={{ display: 'none' }} />
                                     </label>
 
-                                    {room.image_url && <button className="remove-img-btn" onClick={(e) => handleRemoveImage(room.id, e)}>[Remove Image]</button>}
-                                    {room.image_url && room.image_url != defaultRoomImage && <button className="remove-img-btn" onClick={(e) => handleRemoveImage(room.id, e)}>[Remove Image]</button>}
-
                                     {room.image_url && room.image_url!= defaultRoomImage && <button className="remove-img-btn" onClick={(e) => handleRemoveImage(room.id, e)}>[Remove Image]</button>}
-
 
                                     <div className="room-tags" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', margin: '5px 0' }}>
                                         {room.tags && room.tags.map(t => <span key={t} style={{ fontSize: '10px', background: 'var(--bg-main)', padding: '2px 6px', borderRadius: '3px', color: 'var(--color-accent)' }}>{t}</span>)}
@@ -461,19 +422,6 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                         </span>
                                         <button className={`eye-btn ${!revealedCodes.includes(room.id) ? 'hidden-mode' : ''}`} onClick={() => toggleCodeVisibility(room.id)}></button>
                                     </div>
-
-                                    {activeTab === 'GM' && (<div className='room-actions'>
-                                        <button
-                                            className="active-role"
-                                            style={{
-                                                width: '100%',
-                                                opacity: room.isOpen ? 1 : 0.6,
-                                                borderColor: room.isOpen ? 'var(--color-accent)' : '#555'
-                                            }}
-                                            onClick={() => setEditedRoomValues(room)}
-                                        >Edit Room</button>
-                                    </div>)}
-
                                     {activeTab === 'GM' && (<div className='room-actions'>
                                         <button 
                                         className="active-role" 
@@ -485,15 +433,14 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                         onClick={() => setEditedRoomValues(room)}
                                         >Edit Room</button>
                                     </div>)}
-
                                     <div className="room-actions">
-                                        <button
-                                            className="active-role"
-                                            style={{
-                                                width: '100%',
-                                                opacity: room.isOpen ? 1 : 0.6,
-                                                borderColor: room.isOpen ? 'var(--color-accent)' : '#555'
-                                            }}
+                                        <button 
+                                            className="active-role" 
+                                            style={{ 
+                                                width: '100%', 
+                                                opacity: room.isOpen ? 1 : 0.6, 
+                                                borderColor: room.isOpen ? 'var(--color-accent)' : '#555' 
+                                            }} 
                                             onClick={() => handleTryEnterRoom(room)}
                                         >
                                             {room.isOpen ? `Enter Room (${room.role})` : 'Pokój Zamknięty'}
@@ -570,14 +517,14 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                 <label>Dungeon Name</label>
                                 <input type="text" value={newRoomName} onChange={(e) => setNewRoomName(e.target.value)} required />
                             </div>
-
+                            
                             <div className='form-group'>
                                 <label>Room image</label>
                                 <label className="room-image-label">
-                                    <div className="room-image" style={{ backgroundImage: `url(${newRoomImg[0] || 'https://via.placeholder.com/300?text=Click+to+upload'})`, backgroundColor: '#222' }}></div>
+                                    <div className="room-image" style={{ backgroundImage: `url(${ newRoomImg[0] || 'https://via.placeholder.com/300?text=Click+to+upload'})`, backgroundColor: '#222' }}></div>
                                     <input type="file" accept="image/*" onChange={(e) => handleNewRoomImageUpload(e)} style={{ display: 'none' }} />
                                 </label>
-                                {(newRoomImg && newRoomImg[0] != defaultRoomImage) && <button className="remove-img-btn" onClick={(e) => handleRemoveNewRoomImage(e)}>[Remove Image]</button>}
+                                {(newRoomImg && newRoomImg[0]!=defaultRoomImage) && <button className="remove-img-btn" onClick={(e) => handleRemoveNewRoomImage(e)}>[Remove Image]</button>}
                             </div>
 
                             <div className="form-group">
@@ -585,10 +532,10 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                 <div className="tags-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                     {availableTags.filter(t => t !== 'GM' && t !== 'Player').map(tag => (
                                         <label key={tag} className="tag-item">
-                                            <input
-                                                type="checkbox"
-                                                checked={newRoomTags.includes(tag)}
-                                                onChange={() => handleModalTagToggle(tag)}
+                                            <input 
+                                                type="checkbox" 
+                                                checked={newRoomTags.includes(tag)} 
+                                                onChange={() => handleModalTagToggle(tag)} 
                                             />
                                             {tag}
                                         </label>
@@ -627,10 +574,6 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                                 <div className="tags-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                     {availableTags.filter(t => t !== 'GM' && t !== 'Player').map(tag => (
                                         <label key={tag} className="tag-item">
-                                            <input
-                                                type="checkbox"
-                                                checked={editedRoomTags.includes(tag)}
-                                                onChange={() => handleEditModalTagToggle(tag)}
                                             <input 
                                                 type="checkbox" 
                                                 checked={editedRoomTags.includes(tag)} 
@@ -650,8 +593,6 @@ export default function Dashboard({ userID, username, onLogout, onEnterRoom }) {
                 </div>
 
             )}
-
-
         </div>
     );
 }
