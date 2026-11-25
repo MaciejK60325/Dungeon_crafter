@@ -6,11 +6,9 @@ from email.mime.multipart import MIMEMultipart
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel, Field, Session, create_engine, select, LargeBinary
-from typing import Optional, List, Literal
+from typing import Optional, List
 from contextlib import asynccontextmanager
 import hashlib
-from pydantic import model_validator
-
 
 
 # --- FASTAPI + CORS ---
@@ -48,59 +46,6 @@ class UserCreate(SQLModel):
     login: str
     password: str
     mail: str
-
-class Characters(SQLModel, table=True):
-    charID: Optional[int] = Field(default=None, primary_key=True)
-
-    name: str
-    race: str
-    prof: str
-
-    user_id: int = Field(foreign_key="users.userID")
-
-    strength: int = Field(default=0, ge=0, le=9)
-    dexterity: int = Field(default=0, ge=0, le=9)
-    constitution: int = Field(default=0, ge=0, le=9)
-    intelligence: int = Field(default=0, ge=0, le=9)
-    wisdom: int = Field(default=0, ge=0, le=9)
-    charisma: int = Field(default=0, ge=0, le=9)
-
-class CharacterCreate(SQLModel):
-    name: str
-    race: Literal[
-        "Dragonborn", "Dwarf", "Elf", "Gnome",
-        "Half-Elf", "Halfling", "Half-Orc",
-        "Human", "Tiefling"
-    ]
-    
-    prof: Literal[
-        "Barbarian", "Bard", "Cleric", "Druid",
-        "Fighter", "Monk", "Paladin", "Ranger",
-        "Rogue", "Sorcerer", "Warlock", "Wizard"
-    ]
-
-    strength: int = Field(ge=0, le=9)
-    dexterity: int = Field(ge=0, le=9)
-    constitution: int = Field(ge=0, le=9)
-    intelligence: int = Field(ge=0, le=9)
-    wisdom: int = Field(ge=0, le=9)
-    charisma: int = Field(ge=0, le=9)
-
-    @model_validator(mode="after")
-    def validate_points(self):
-        total = (
-            self.strength +
-            self.dexterity +
-            self.constitution +
-            self.intelligence +
-            self.wisdom +
-            self.charisma
-        )
-
-        if total != 27:
-            raise ValueError("Exactly 27 points must be distributed")
-
-        return self
 
 class Rooms(SQLModel, table=True):
     roomID: Optional[int] = Field(default=None, primary_key=True)
@@ -219,38 +164,6 @@ def read_users():
     with Session(engine) as session:
         users = session.exec(select(Users)).all()
         return users
-
-@app.post("/users/{user_id}/characters/", response_model=Characters)
-def create_character(user_id: int, characters: CharacterCreate):
-    db_character = Characters(
-        **characters.model_dump(),
-        user_id=user_id
-    )
-    with Session(engine) as session:
-        existing_character = session.exec(select(Characters).where(Characters.name == characters.name, Characters.user_id == user_id)).first()
-        if existing_character:
-            raise HTTPException(status_code=400, detail="Postac o takim imieniu juz istnieje")
-        session.add(db_character)
-        session.commit()
-        session.refresh(db_character)
-        return db_character
-
-@app.get("/users/{user_id}/characters/", response_model=List[Characters])
-def get_user_characters(user_id: int):
-    with Session(engine) as session:
-        return session.exec(
-            select(Characters).where(Characters.user_id == user_id)
-            ).all()
-
-@app.delete("/users/{user_id}/characters/{char_id}/")
-def delete_character(user_id: int, char_id: int):
-    with Session(engine) as session:
-        character = session.get(Characters, char_id)
-        if not character:
-            raise HTTPException(status_code=404, detail="Not found")
-        session.delete(character)
-        session.commit()
-        return {"ok": True}
 
 @app.post("/login/")
 def login_user(login: str, password: str):
